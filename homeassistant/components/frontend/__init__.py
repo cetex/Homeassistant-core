@@ -13,7 +13,17 @@ import jinja2
 import voluptuous as vol
 from yarl import URL
 
-from homeassistant.components import onboarding, websocket_api
+_LOGGER = logging.getLogger(__name__)
+
+#try:
+#    from homeassistant.components import onboarding
+#except ModuleNotFoundError as e:
+#    _LOGGER.warning("Component onboarding not found: %s", e)
+#    onboarding = None
+onboarding = None
+
+#from homeassistant.components import onboarding, websocket_api
+from homeassistant.components import websocket_api
 from homeassistant.components.http.view import HomeAssistantView
 from homeassistant.components.websocket_api.connection import ActiveConnection
 from homeassistant.config import async_hass_config_yaml
@@ -66,8 +76,6 @@ DEFAULT_THEME = "default"
 VALUE_NO_THEME = "none"
 
 PRIMARY_COLOR = "primary-color"
-
-_LOGGER = logging.getLogger(__name__)
 
 EXTENDED_THEME_SCHEMA = vol.Schema(
     {
@@ -351,6 +359,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_register_command(hass, websocket_get_translations)
     websocket_api.async_register_command(hass, websocket_get_version)
     hass.http.register_view(ManifestJSONView())
+    onboarding = hass.components.get('onboarding', None)
 
     conf = config.get(DOMAIN, {})
 
@@ -597,7 +606,7 @@ class IndexView(web_urldispatcher.AbstractResource):
         """Serve the index page for panel pages."""
         hass: HomeAssistant = request.app["hass"]
 
-        if not onboarding.async_is_onboarded(hass):
+        if onboarding and not onboarding.async_is_onboarded(hass):
             return web.Response(status=302, headers={"location": "/onboarding.html"})
 
         template = self._template_cache or await hass.async_add_executor_job(
