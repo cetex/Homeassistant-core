@@ -1332,6 +1332,13 @@ class Components:
         setattr(self, comp_name, wrapped)
         return wrapped
 
+    def get(self, k, v) -> ModuleWrapper:
+        """Fetch a component or return default value."""
+        try:
+            return self.__getattr__(k)
+        except KeyError:
+            return v
+
 
 class Helpers:
     """Helper to load helpers."""
