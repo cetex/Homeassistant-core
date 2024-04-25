@@ -129,31 +129,22 @@ DEFAULT_INTEGRATIONS = {
     #
     # Integrations providing core functionality:
     "application_credentials",
-    "backup",
     "frontend",
-    "hardware",
-    "logger",
     "network",
-    "system_health",
     #
     # Key-feature:
     "automation",
-    "person",
     "scene",
     "script",
-    "tag",
     "zone",
     #
     # Built-in helpers:
-    "counter",
     "input_boolean",
     "input_button",
     "input_datetime",
     "input_number",
     "input_select",
     "input_text",
-    "schedule",
-    "timer",
 }
 DEFAULT_INTEGRATIONS_RECOVERY_MODE = {
     # These integrations are set up if recovery mode is activated.
