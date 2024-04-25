@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from enum import IntFlag, StrEnum
 from functools import cache
+import logging
 from typing import Any, Generic, Literal, Required, TypedDict, TypeVar, cast
 from uuid import UUID
 
@@ -18,6 +19,8 @@ from homeassistant.util.yaml import dumper
 from . import config_validation as cv
 
 SELECTORS: decorator.Registry[str, type[Selector]] = decorator.Registry()
+
+_LOGGER = logging.getLogger(__name__)
 
 _T = TypeVar("_T", bound=Mapping[str, Any])
 
@@ -84,49 +87,36 @@ class Selector(Generic[_T]):
 def _entity_features() -> dict[str, type[IntFlag]]:
     """Return a cached lookup of entity feature enums."""
     # pylint: disable=import-outside-toplevel
-    from homeassistant.components.alarm_control_panel import (
-        AlarmControlPanelEntityFeature,
-    )
-    from homeassistant.components.calendar import CalendarEntityFeature
-    from homeassistant.components.camera import CameraEntityFeature
-    from homeassistant.components.climate import ClimateEntityFeature
-    from homeassistant.components.cover import CoverEntityFeature
-    from homeassistant.components.fan import FanEntityFeature
-    from homeassistant.components.humidifier import HumidifierEntityFeature
-    from homeassistant.components.lawn_mower import LawnMowerEntityFeature
-    from homeassistant.components.light import LightEntityFeature
-    from homeassistant.components.lock import LockEntityFeature
-    from homeassistant.components.media_player import MediaPlayerEntityFeature
-    from homeassistant.components.remote import RemoteEntityFeature
-    from homeassistant.components.siren import SirenEntityFeature
-    from homeassistant.components.todo import TodoListEntityFeature
-    from homeassistant.components.update import UpdateEntityFeature
-    from homeassistant.components.vacuum import VacuumEntityFeature
-    from homeassistant.components.valve import ValveEntityFeature
-    from homeassistant.components.water_heater import WaterHeaterEntityFeature
-    from homeassistant.components.weather import WeatherEntityFeature
+    from importlib import import_module
+    def import_feature(module, feature):
+        try:
+            return getattr(import_module(f"homeassistant.components.{module}"), feature)
+        except Exception as exc:
+            _LOGGER.error("Failed importing component: %s, feature: %s", module, feature, exc_info=exc)
 
-    return {
-        "AlarmControlPanelEntityFeature": AlarmControlPanelEntityFeature,
-        "CalendarEntityFeature": CalendarEntityFeature,
-        "CameraEntityFeature": CameraEntityFeature,
-        "ClimateEntityFeature": ClimateEntityFeature,
-        "CoverEntityFeature": CoverEntityFeature,
-        "FanEntityFeature": FanEntityFeature,
-        "HumidifierEntityFeature": HumidifierEntityFeature,
-        "LawnMowerEntityFeature": LawnMowerEntityFeature,
-        "LightEntityFeature": LightEntityFeature,
-        "LockEntityFeature": LockEntityFeature,
-        "MediaPlayerEntityFeature": MediaPlayerEntityFeature,
-        "RemoteEntityFeature": RemoteEntityFeature,
-        "SirenEntityFeature": SirenEntityFeature,
-        "TodoListEntityFeature": TodoListEntityFeature,
-        "UpdateEntityFeature": UpdateEntityFeature,
-        "VacuumEntityFeature": VacuumEntityFeature,
-        "ValveEntityFeature": ValveEntityFeature,
-        "WaterHeaterEntityFeature": WaterHeaterEntityFeature,
-        "WeatherEntityFeature": WeatherEntityFeature,
+    features = {
+        "alarm_control_panel": "AlarmControlPanelEntityFeature",
+        "calendar": "CalendarEntityFeature",
+        "camera": "CameraEntityFeature",
+        "climate": "ClimateEntityFeature",
+        "cover": "CoverEntityFeature",
+        "fan": "FanEntityFeature",
+        "humidifier": "HumidifierEntityFeature",
+        "lawn_mower": "LawnMowerEntityFeature",
+        "light": "LightEntityFeature",
+        "lock": "LockEntityFeature",
+        "media_player": "MediaPlayerEntityFeature",
+        "remote": "RemoteEntityFeature",
+        "siren": "SirenEntityFeature",
+        "todo": "TodoListEntityFeature",
+        "update": "UpdateEntityFeature",
+        "vacuum": "VacuumEntityFeature",
+        "valve": "ValveEntityFeature",
+        "water_heater": "WaterHeaterEntityFeature",
+        "weather": "WeatherEntityFeature"
     }
+
+    return {v: import_feature(k, v) for k, v in features.items()}
 
 
 def _validate_supported_feature(supported_feature: str) -> int:
@@ -145,7 +135,7 @@ def _validate_supported_feature(supported_feature: str) -> int:
     try:
         return cast(int, getattr(known_entity_features[enum], feature).value)
     except (AttributeError, KeyError) as exc:
-        raise vol.Invalid(f"Unknown supported feature '{supported_feature}'") from exc
+        raise vol.Invalid(f"Unknown supported feature '{supported_feature}', '{enum}'") from exc
 
 
 def _validate_supported_features(supported_features: int | list[str]) -> int:

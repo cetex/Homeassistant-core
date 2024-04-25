@@ -77,43 +77,33 @@ ALL_SERVICE_DESCRIPTIONS_CACHE = "all_service_descriptions_cache"
 def _base_components() -> dict[str, ModuleType]:
     """Return a cached lookup of base components."""
     # pylint: disable-next=import-outside-toplevel
-    from homeassistant.components import (
-        alarm_control_panel,
-        calendar,
-        camera,
-        climate,
-        cover,
-        fan,
-        humidifier,
-        light,
-        lock,
-        media_player,
-        remote,
-        siren,
-        todo,
-        update,
-        vacuum,
-        water_heater,
-    )
+    from importlib import import_module
+    def import_component(module):
+        try:
+            return import_module(f"homeassistant.components.{module}")
+        except Exception as exc:
+            _LOGGER.error("Failed importing component: %s", module, exc_info=exc)
 
-    return {
-        "alarm_control_panel": alarm_control_panel,
-        "calendar": calendar,
-        "camera": camera,
-        "climate": climate,
-        "cover": cover,
-        "fan": fan,
-        "humidifier": humidifier,
-        "light": light,
-        "lock": lock,
-        "media_player": media_player,
-        "remote": remote,
-        "siren": siren,
-        "todo": todo,
-        "update": update,
-        "vacuum": vacuum,
-        "water_heater": water_heater,
-    }
+    components = [
+        "alarm_control_panel",
+        "calendar",
+        "camera",
+        "climate",
+        "cover",
+        "fan",
+        "humidifier",
+        "light",
+        "lock",
+        "media_player",
+        "remote",
+        "siren",
+        "todo",
+        "update",
+        "vacuum",
+        "water_heater",
+    ]
+
+    return {k: import_component(k) for k in components}
 
 
 def _validate_option_or_feature(option_or_feature: str, label: str) -> Any:
